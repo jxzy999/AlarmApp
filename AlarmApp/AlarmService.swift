@@ -172,6 +172,7 @@ class AlarmService {
         
         let alertContent = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: alarm.label),
+            stopButton: .stopButton,
             secondaryButton: secondaryBtn,
             secondaryButtonBehavior: behavior
         )
