@@ -32,12 +32,8 @@ class AudioPlayerManager {
         // 先停止旧的
         stop()
         
-        // 尝试查找文件 (支持 caf, wav, mp3)
-        // 注意：iOS 通知声音首选 .caf
-        guard let url = Bundle.main.url(forResource: soundName, withExtension: "caf") ??
-                        Bundle.main.url(forResource: soundName, withExtension: "wav") ??
-                        Bundle.main.url(forResource: soundName, withExtension: "m4a")
-        else {
+        // 尝试查找文件 (m4a)
+        guard let url = Bundle.main.url(forResource: soundName, withExtension: "m4a") else {
             print("找不到音频文件: \(soundName)")
             return
         }

@@ -18,7 +18,7 @@ struct EditAlarmView: View {
     // --- 状态 ---
     @State private var time: Date = Date()
     @State private var label: String = "闹钟"
-    @State private var soundName: String = "Bell Tower"
+    @State private var soundName: String = ""
     
     // 重复模式状态
     @State private var repeatMode: AlarmRepeatMode = .once
@@ -201,6 +201,9 @@ struct EditAlarmView: View {
             selectedYearDate = alarm.repeatYearDate
             isSnoozeEnabled = alarm.isSnoozeEnabled
             snoozeDuration = alarm.snoozeDuration
+            if soundName.isEmpty {
+                soundName = alarm.soundName
+            }
         } else {
             // 如果是新增，初始化一些默认值
             time = Date()
@@ -208,6 +211,9 @@ struct EditAlarmView: View {
             let calendar = Calendar.current
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: time)
             time = calendar.date(from: components) ?? Date()
+            if soundName.isEmpty {
+                soundName = "Bell Tower"
+            }
         }
     }
     
@@ -228,6 +234,7 @@ struct EditAlarmView: View {
         alarmToSave.isSnoozeEnabled = isSnoozeEnabled
         alarmToSave.snoozeDuration = snoozeDuration
         alarmToSave.isEnabled = true
+        alarmToSave.soundName = soundName
         
         if existingAlarm == nil {
             modelContext.insert(alarmToSave)
