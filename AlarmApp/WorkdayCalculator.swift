@@ -8,35 +8,35 @@
 import Foundation
 
 struct WorkdayCalculator {
-    // 判断指定日期是否需要响铃（中国法定工作日逻辑）
+    // 判断指定日期是否需要响铃
     static func isChineseWorkday(_ date: Date) -> Bool {
         let calendar = Calendar.current
         let weekday = calendar.component(.weekday, from: date) // 1=Sun, 7=Sat
         
+        // 格式化为 yyyy-MM-dd 以便查表
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        // 强制使用公历，防止用户日历设置影响
+        formatter.calendar = Calendar(identifier: .gregorian)
         let dateString = formatter.string(from: date)
         
-        // --- 配置区域 (实际开发请从网络获取并缓存) ---
+        // 获取单例服务
+        let service = HolidayService.shared
         
-        // 1. 法定节假日 (放假不响)
-        let holidays = [
-            "2026-01-01", // 元旦
-            "2026-02-16", "2026-02-17" // 模拟春节
-        ]
+        // 1. 优先级最高：调休补班 (虽然是周末，但要上班) -> 响铃
+        if service.makeUpWorkdays.contains(dateString) {
+            return true
+        }
         
-        // 2. 调休补班 (周末要响)
-        let makeUpWorkdays = [
-            "2026-02-08" // 假设这天周日上班
-        ]
+        // 2. 优先级次之：法定节假日 (虽然是周一到周五，但放假) -> 不响
+        if service.holidays.contains(dateString) {
+            return false
+        }
         
-        // ----------------------------------------
-        
-        if holidays.contains(dateString) { return false } // 节假日：不响
-        if makeUpWorkdays.contains(dateString) { return true } // 补班：响
-        
-        // 普通逻辑：周一到周五响，周末不响
-        if weekday == 1 || weekday == 7 { return false }
+        // 3. 兜底逻辑：普通周一到周五响，周末不响
+        if weekday == 1 || weekday == 7 {
+            return false
+        }
         
         return true
     }

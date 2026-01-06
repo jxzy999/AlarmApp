@@ -26,6 +26,11 @@ struct AlarmAppApp: App {
     var body: some Scene {
         WindowGroup {
             AlarmListView()
+                .task {
+                    // 启动时异步更新节假日数据
+                    // 这不会阻塞 UI，下载完成后下次计算会自动生效
+                    await HolidayService.shared.fetchHolidayData()
+                }
         }
         .modelContainer(sharedModelContainer)
     }

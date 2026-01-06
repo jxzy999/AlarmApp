@@ -92,11 +92,6 @@ struct SnoozeIntent: LiveActivityIntent {
 
 // 扩展按钮样式
 extension AlarmButton {
-    static var stopButton: Self {
-        // 样式可根据需求修改，这里设为红色停止样式
-        AlarmButton(text: "停止", textColor: .white, systemImageName: "stop.circle.fill")
-    }
-    
     static var snoozeButton: Self {
         AlarmButton(text: "稍后", textColor: .primary, systemImageName: "moon.zzz.fill")
     }

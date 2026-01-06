@@ -11,7 +11,7 @@ import CryptoKit
 import SwiftData
 import SwiftUI
 import AppIntents
-internal import ActivityKit
+import ActivityKit
 
 @Observable
 class AlarmService {
@@ -24,6 +24,7 @@ class AlarmService {
         Task {
             // 清理所有旧的 (包括小睡产生的临时闹钟)
             await cleanUpSystemAlarms(for: alarm)
+            
             guard alarm.isEnabled else { return }
             
             // 权限检查
@@ -51,8 +52,8 @@ class AlarmService {
     private func scheduleOnce(_ alarm: AlarmModel) async {
         // 如果时间已过，定在明天；否则今天
         let targetDate = calculateNextFireDate(from: alarm.time)
-        // 使用 "once" 作为后缀，确保 ID 固定，每次修改都能覆盖旧的
-        await scheduleFixed(alarm, at: targetDate, idSuffix: "once")
+        
+        await scheduleFixed(alarm, at: targetDate)
     }
     
     // 2. 每周 (使用 .relative repeats .weekly)
@@ -90,7 +91,7 @@ class AlarmService {
                    let fireDate = calendar.date(from: components),
                    fireDate > now {
                     
-                    await scheduleFixed(alarm, at: fireDate, idSuffix: "monthly-\(fireDate.timeIntervalSince1970)")
+                    await scheduleFixed(alarm, at: fireDate)
                 }
             }
         }
@@ -112,7 +113,7 @@ class AlarmService {
             components.minute = timeComps.minute
             
             if let fireDate = calendar.date(from: components), fireDate > now {
-                await scheduleFixed(alarm, at: fireDate, idSuffix: "yearly-\(components.year!)")
+                await scheduleFixed(alarm, at: fireDate)
             }
         }
     }
@@ -131,7 +132,7 @@ class AlarmService {
                 comps.hour = time.hour; comps.minute = time.minute
                 
                 if let fireDate = calendar.date(from: comps), fireDate > now {
-                    await scheduleFixed(alarm, at: fireDate, idSuffix: "holiday-\(i)")
+                    await scheduleFixed(alarm, at: fireDate)
                 }
             }
         }
@@ -158,7 +159,6 @@ class AlarmService {
         // 2. UI 配置：把按钮加回来
         let alertContent = AlarmPresentation.Alert(
             title: "稍后提醒",
-            stopButton: .stopButton,
             secondaryButton: .snoozeButton, // <--- 显示按钮
             secondaryButtonBehavior: .custom // <--- 设为自定义行为
         )
@@ -188,10 +188,10 @@ class AlarmService {
     }
     
     // MARK: - 辅助：通用单次调度
-    private func scheduleFixed(_ alarm: AlarmModel, at date: Date, idSuffix: String) async {
-        let childID = generateDeterministicUUID(parentID: alarm.id, suffix: idSuffix)
+    private func scheduleFixed(_ alarm: AlarmModel, at date: Date) async {
+        // 生成全新随机 ID，避免 Code 0 冲突
+        let childID = UUID()
         
-        // 注意：这里将 snoozeDuration 传入 Intent
         let snoozeIntent = alarm.isSnoozeEnabled
         ? SnoozeIntent(alarmID: childID.uuidString,
                        duration: alarm.snoozeDuration,
@@ -199,11 +199,20 @@ class AlarmService {
                        label: alarm.label)
         : nil
         
+        // 这里的 childID 传给 buildConfiguration
         let config = buildConfiguration(for: alarm, schedule: .fixed(date), childID: childID, snoozeIntent: snoozeIntent)
         
-        let systomAlarm = try? await alarmManager.schedule(id: childID, configuration: config)
+        do {
+            let systemAlarm = try await alarmManager.schedule(id: childID, configuration: config)
+            print("✅ 成功调度 - ID: \(systemAlarm.id) ， date: \(date)")
+            
+            // --- 关键：追加 ID 到列表，而不是覆盖 ---
+            appendSystemID(childID, for: alarm.id)
+            
+        } catch {
+            print("❌ 调度失败: \(error)")
+        }
         
-        print("scheduleFixed - alarm: \(String(describing: systomAlarm?.id))")
         alarm.debugLog()
     }
     
@@ -218,7 +227,6 @@ class AlarmService {
         
         let alertContent = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: alarm.label),
-            stopButton: .stopButton,
             secondaryButton: secondaryBtn,
             secondaryButtonBehavior: behavior
         )
@@ -253,19 +261,6 @@ class AlarmService {
         )
     }
     
-    // 确定性 UUID (带 Suffix 字符串)
-    private func generateDeterministicUUID(parentID: UUID, suffix: String) -> UUID {
-        let comboStr = "\(parentID.uuidString)-\(suffix)"
-        let inputData = Data(comboStr.utf8)
-        let hashed = Insecure.MD5.hash(data: inputData)
-        // ... (同之前的 MD5 转 UUID 逻辑) ...
-        var uuidBytes = [UInt8](repeating: 0, count: 16)
-        hashed.withUnsafeBytes { buffer in
-            for i in 0..<16 { if i < buffer.count { uuidBytes[i] = buffer[i] } }
-        }
-        return UUID(uuid: (uuidBytes[0], uuidBytes[1], uuidBytes[2], uuidBytes[3], uuidBytes[4], uuidBytes[5], uuidBytes[6], uuidBytes[7], uuidBytes[8], uuidBytes[9], uuidBytes[10], uuidBytes[11], uuidBytes[12], uuidBytes[13], uuidBytes[14], uuidBytes[15]))
-    }
-    
     private func calculateNextFireDate(from time: Date) -> Date {
         let calendar = Calendar.current
         let now = Date()
@@ -290,16 +285,50 @@ class AlarmService {
         return nextDate
     }
     
-    // 清理逻辑 (略微修改以适应新的 Suffix)
+    
+    // MARK: - ID 管理 (解决冲突的关键)
+    
+    private func getStoreKey(for alarmID: UUID) -> String {
+        return "sys_ids_\(alarmID.uuidString)"
+    }
+    
+    // 获取该闹钟关联的所有系统 ID 列表
+    private func getSystemIDs(for alarmID: UUID) -> [String] {
+        return UserDefaults.standard.stringArray(forKey: getStoreKey(for: alarmID)) ?? []
+    }
+    
+    // 添加一个新的系统 ID 到列表
+    private func appendSystemID(_ systemID: UUID, for alarmID: UUID) {
+        var ids = getSystemIDs(for: alarmID)
+        ids.append(systemID.uuidString)
+        UserDefaults.standard.set(ids, forKey: getStoreKey(for: alarmID))
+    }
+    
+    // 清空该闹钟的所有记录
+    private func clearSystemIDs(for alarmID: UUID) {
+        UserDefaults.standard.removeObject(forKey: getStoreKey(for: alarmID))
+    }
+    
+    // MARK: - 清理逻辑
     @MainActor
     func deleteAlarm(_ alarm: AlarmModel) {
         Task { await cleanUpSystemAlarms(for: alarm) }
     }
     
     private func cleanUpSystemAlarms(for alarm: AlarmModel) async {
-        try? alarmManager.cancel(id: alarm.id) // 移除主 ID
-        // 暴力清理未来可能的 ID (真实场景最好有记录)
-        // 这里只是演示，实际可能需要更复杂的 ID 追踪
+        // 1. 获取记录的所有系统 ID
+        let ids = getSystemIDs(for: alarm.id)
+        
+        // 2. 遍历并取消系统通知
+        for idStr in ids {
+            if let uuid = UUID(uuidString: idStr) {
+                try? alarmManager.cancel(id: uuid)
+                print("🗑️ 已清理 ID: \(uuid)")
+            }
+        }
+        
+        // 3. 清空本地记录
+        clearSystemIDs(for: alarm.id)
     }
 }
 
