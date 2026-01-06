@@ -138,72 +138,15 @@ class AlarmService {
         }
     }
     
-    // MARK: - 小睡业务逻辑
-    func scheduleSnooze(originalID: UUID, minutes: Int, soundName: String, label: String) async {
-        let now = Date()
-        let timeInterval = TimeInterval(minutes * 60)
-        let fireDate = now.addingTimeInterval(timeInterval)
-        let snoozeID = UUID()
-        
-        // 1. 构造 Intent (同前)
-        let nextSnoozeIntent = SnoozeIntent(
-            alarmID: snoozeID.uuidString,
-            duration: minutes,
-            soundName: soundName,
-            label: label
-        )
-        
-        // 2. 构造配置 (同前)
-        let alertContent = AlarmPresentation.Alert(
-            title: "稍后提醒",
-            secondaryButton: .snoozeButton,
-            secondaryButtonBehavior: .custom
-        )
-        
-        let countdownContent = AlarmPresentation.Countdown(title: "稍后提醒", pauseButton: .stopButton)
-        
-        let attributes = AlarmAttributes(
-            presentation: AlarmPresentation(alert: alertContent, countdown: countdownContent),
-            metadata: AppAlarmMetadata(label: label, soundName: soundName),
-            tintColor: .orange
-        )
-        
-        let soundFileName = soundName.hasSuffix(".m4a") ? soundName : "\(soundName).m4a"
-        let alertSound = AlertConfiguration.AlertSound.named(soundFileName)
-        
-        let config = MyAppAlarmConfiguration(
-            countdownDuration: .init(preAlert: timeInterval, postAlert: timeInterval),
-//            schedule: .fixed(fireDate),
-            attributes: attributes,
-            stopIntent: StopIntent(alarmID: snoozeID.uuidString),
-            secondaryIntent: nextSnoozeIntent,
-            sound: alertSound
-        )
-        
-        // 3. 提交给系统
-        do {
-            let _ = try await alarmManager.schedule(id: snoozeID, configuration: config)
-            Log.d("已设定小睡闹钟: \(snoozeID)")
-            
-        } catch {
-            Log.d("❌ 小睡设定失败: \(error)")
-        }
-    }
-    
     // MARK: - 辅助：通用单次调度
     private func scheduleFixed(_ alarm: AlarmModel, at date: Date) async {
         // 生成全新随机 ID，避免 Code 0 冲突
         let childID = UUID()
         
-        let snoozeIntent = alarm.isSnoozeEnabled
-        ? SnoozeIntent(alarmID: childID.uuidString,
-                       duration: alarm.snoozeDuration,
-                       soundName: alarm.soundName,
-                       label: alarm.label)
-        : nil
+        let schedule = Alarm.Schedule.fixed(date)
         
         // 这里的 childID 传给 buildConfiguration
-        let config = buildConfiguration(for: alarm, schedule: .fixed(date), childID: childID, snoozeIntent: snoozeIntent)
+        let config = buildConfiguration(for: alarm, schedule: schedule, childID: childID)
         
         do {
             let systemAlarm = try await alarmManager.schedule(id: childID, configuration: config)
@@ -221,12 +164,11 @@ class AlarmService {
     
     private func buildConfiguration(for alarm: AlarmModel,
                                     schedule: Alarm.Schedule,
-                                    childID: UUID,
-                                    snoozeIntent: (any LiveActivityIntent)? = nil) -> MyAppAlarmConfiguration {
+                                    childID: UUID) -> MyAppAlarmConfiguration {
         
         // 只有当传入了 snoozeIntent 时才显示按钮
-        let secondaryBtn: AlarmButton? = (snoozeIntent != nil) ? .snoozeButton : nil
-        let behavior: AlarmPresentation.Alert.SecondaryButtonBehavior? = (snoozeIntent != nil) ? .custom : nil
+        let secondaryBtn: AlarmButton? = alarm.isSnoozeEnabled ? .snoozeButton : nil
+        let behavior: AlarmPresentation.Alert.SecondaryButtonBehavior? = alarm.isSnoozeEnabled ? .countdown : nil
         
         let alertContent = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: alarm.label),
@@ -234,28 +176,35 @@ class AlarmService {
             secondaryButtonBehavior: behavior
         )
         
+        var presentation = AlarmPresentation(alert: alertContent)
+        
+        if alarm.isSnoozeEnabled {
+            let countdownContent = AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: alarm.label),
+                                                               pauseButton: .stopButton)
+            
+            let pausedContent = AlarmPresentation.Paused(title: "Paused",
+                                                         resumeButton: .resumeButton)
+            
+            presentation = AlarmPresentation(alert: alertContent, countdown: countdownContent, paused: pausedContent)
+        }
+        
         let attributes = AlarmAttributes(
-            presentation: AlarmPresentation(alert: alertContent),
+            presentation: presentation,
             metadata: AppAlarmMetadata(label: alarm.label, soundName: alarm.soundName),
             tintColor: .blue
         )
         
-        // 如果没有传入特定的 snoozeIntent (比如在 scheduleFixed 外部调用)，则根据 alarm 配置生成
-        let finalSnoozeIntent = snoozeIntent ?? (
-            alarm.isSnoozeEnabled ? SnoozeIntent(
-                alarmID: childID.uuidString,
-                duration: alarm.snoozeDuration,
-                soundName: alarm.soundName,
-                label: alarm.label
-            ) : nil
-        )
-        
-        // 3. 处理铃声格式
+        // 处理铃声格式
         let soundName = alarm.soundName
         let soundFileName = soundName.hasSuffix(".m4a") ? soundName : "\(soundName).m4a"
         let alertSound = AlertConfiguration.AlertSound.named(soundFileName)
         
+        let timeInterval = TimeInterval(alarm.snoozeDuration * 60)
+        let countdownDuration = alarm.isSnoozeEnabled ? Alarm.CountdownDuration.init(preAlert: nil, postAlert: timeInterval) : nil
+        let finalSnoozeIntent = alarm.isSnoozeEnabled ? RepeatIntent(alarmID: childID.uuidString) : nil
+        
         return MyAppAlarmConfiguration(
+            countdownDuration: countdownDuration,
             schedule: schedule,
             attributes: attributes,
             stopIntent: StopIntent(alarmID: childID.uuidString),
@@ -325,8 +274,12 @@ class AlarmService {
         // 2. 遍历并取消系统通知
         for idStr in ids {
             if let uuid = UUID(uuidString: idStr) {
-                try? alarmManager.cancel(id: uuid)
-                Log.d("🗑️ 已清理 ID: \(uuid)")
+                do {
+                    try alarmManager.cancel(id: uuid)
+                    Log.d("🗑️ 已清理 ID: \(uuid)")
+                } catch {
+                    Log.d("🗑️ 清理 ID: \(uuid) error: \(error)")
+                }
             }
         }
         

@@ -46,50 +46,28 @@ struct StopIntent: LiveActivityIntent {
 }
 
 
-struct SnoozeIntent: LiveActivityIntent {
+struct RepeatIntent: LiveActivityIntent {
+    func perform() throws -> some IntentResult {
+        if let uuid = UUID(uuidString: alarmID) {
+            try AlarmManager.shared.countdown(id: uuid)
+        }
+        return .result()
+    }
+    
     static var title: LocalizedStringResource = "稍后提醒"
+    static var description = IntentDescription("稍后再重复一次")
     
     @Parameter(title: "Alarm ID")
     var alarmID: String
     
-    @Parameter(title: "Duration")
-    var duration: Int
-    
-    // --- 新增参数：携带铃声和标签 ---
-    @Parameter(title: "Sound Name")
-    var soundName: String
-    
-    @Parameter(title: "Label")
-    var label: String
-    
-    init() {}
-    
-    // 初始化时传入这些信息
-    init(alarmID: String, duration: Int, soundName: String, label: String) {
+    init(alarmID: String) {
         self.alarmID = alarmID
-        self.duration = duration
-        self.soundName = soundName
-        self.label = label
     }
     
-    func perform() throws -> some IntentResult {
-        if let uuid = UUID(uuidString: alarmID) {
-            try AlarmManager.shared.stop(id: uuid)
-            
-            // 将携带的铃声和标签传给 Service
-            Task {
-                await AlarmService.shared.scheduleSnooze(
-                    originalID: uuid,
-                    minutes: duration,
-                    soundName: soundName, // 传入铃声
-                    label: label          // 传入标签
-                )
-            }
-        }
-        return .result()
+    init() {
+        self.alarmID = ""
     }
 }
-
 
 
 // 扩展按钮样式
@@ -100,5 +78,9 @@ extension AlarmButton {
     
     static var stopButton: Self {
         AlarmButton(text: "停止", textColor: .black, systemImageName: "pause.fill")
+    }
+    
+    static var resumeButton: Self {
+        AlarmButton(text: "Start", textColor: .black, systemImageName: "play.fill")
     }
 }
