@@ -15,7 +15,7 @@ import SwiftUI
 struct AppAlarmMetadata: AlarmMetadata, Codable {
     var label: String
     var soundName: String
-    init(label: String = "闹钟", soundName: String = "Helios") {
+    init(label: String = "闹钟", soundName: String = "Bell Tower") {
         self.label = label
         self.soundName = soundName
     }
@@ -49,28 +49,41 @@ struct StopIntent: LiveActivityIntent {
 struct SnoozeIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "稍后提醒"
     
-    // 1. 接收 Alarm ID
     @Parameter(title: "Alarm ID")
     var alarmID: String
     
-    // 2. 接收用户设置的时长 (分钟)
     @Parameter(title: "Duration")
     var duration: Int
     
+    // --- 新增参数：携带铃声和标签 ---
+    @Parameter(title: "Sound Name")
+    var soundName: String
+    
+    @Parameter(title: "Label")
+    var label: String
+    
     init() {}
-    init(alarmID: String, duration: Int) {
+    
+    // 初始化时传入这些信息
+    init(alarmID: String, duration: Int, soundName: String, label: String) {
         self.alarmID = alarmID
         self.duration = duration
+        self.soundName = soundName
+        self.label = label
     }
     
     func perform() throws -> some IntentResult {
-        // 先停止当前的
         if let uuid = UUID(uuidString: alarmID) {
             try AlarmManager.shared.stop(id: uuid)
             
-            // 业务功能：设定一个新的单次闹钟 (N分钟后)
+            // 将携带的铃声和标签传给 Service
             Task {
-                await AlarmService.shared.scheduleSnooze(originalID: uuid, minutes: duration)
+                await AlarmService.shared.scheduleSnooze(
+                    originalID: uuid,
+                    minutes: duration,
+                    soundName: soundName, // 传入铃声
+                    label: label          // 传入标签
+                )
             }
         }
         return .result()

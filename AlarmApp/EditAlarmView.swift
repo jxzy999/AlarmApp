@@ -18,7 +18,7 @@ struct EditAlarmView: View {
     // --- 状态 ---
     @State private var time: Date = Date()
     @State private var label: String = "闹钟"
-    @State private var soundName: String = "Helios"
+    @State private var soundName: String = "Bell Tower"
     
     // 重复模式状态
     @State private var repeatMode: AlarmRepeatMode = .once
@@ -75,10 +75,16 @@ struct EditAlarmView: View {
                             TextField("闹钟", text: $label).multilineTextAlignment(.trailing)
                         }
                         
-                        HStack {
-                            Text("铃声")
-                            Spacer()
-                            Text(soundName).foregroundStyle(.gray)
+                        // --- 修改开始 ---
+                        NavigationLink {
+                            RingtoneSelectView(selectedSound: $soundName)
+                        } label: {
+                            HStack {
+                                Text("铃声")
+                                Spacer()
+                                Text(soundName)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         
                         Toggle("稍后提醒", isOn: $isSnoozeEnabled)

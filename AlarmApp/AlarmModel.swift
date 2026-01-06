@@ -42,7 +42,7 @@ final class AlarmModel {
         self.time = time
         self.label = label
         self.isEnabled = isEnabled
-        self.soundName = "Helios"
+        self.soundName = "Bell Tower"
         
         // 默认值初始化
         self.repeatMode = .once

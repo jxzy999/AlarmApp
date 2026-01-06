@@ -137,24 +137,23 @@ class AlarmService {
     }
     
     // MARK: - 小睡业务逻辑
-    func scheduleSnooze(originalID: UUID, minutes: Int) async {
+    func scheduleSnooze(originalID: UUID, minutes: Int, soundName: String, label: String) async {
         let now = Date()
         let fireDate = now.addingTimeInterval(TimeInterval(minutes * 60))
         
-        // 生成临时小睡 ID
         let snoozeID = UUID()
         
         // 构造临时配置
-        // 这里需要构建一个临时的 Configuration，元数据稍微不同
         let alertContent = AlarmPresentation.Alert(
-            title: "稍后提醒",
+            title: "稍后提醒", // 或者使用 "稍后: \(label)"
             stopButton: .stopButton,
-            secondaryButton: nil // 小睡的闹钟通常只能停止，或者再次小睡(这里简化为停止)
+            secondaryButton: nil
         )
         
         let attributes = AlarmAttributes(
             presentation: AlarmPresentation(alert: alertContent),
-            metadata: AppAlarmMetadata(label: "小睡", soundName: "Helios"),
+            // --- 这里使用传入的 soundName 和 label ---
+            metadata: AppAlarmMetadata(label: label, soundName: soundName),
             tintColor: .orange
         )
         
@@ -165,8 +164,9 @@ class AlarmService {
             secondaryIntent: nil
         )
         
+        // 忽略错误或打印
         let _ = try? await alarmManager.schedule(id: snoozeID, configuration: config)
-        print("已设定小睡: \(minutes)分钟后")
+        print("已设定小睡: \(minutes)分钟后, 铃声: \(soundName)")
     }
     
     // MARK: - 辅助：通用单次调度
@@ -175,7 +175,10 @@ class AlarmService {
         
         // 注意：这里将 snoozeDuration 传入 Intent
         let snoozeIntent = alarm.isSnoozeEnabled
-        ? SnoozeIntent(alarmID: childID.uuidString, duration: alarm.snoozeDuration)
+        ? SnoozeIntent(alarmID: childID.uuidString,
+                       duration: alarm.snoozeDuration,
+                       soundName: alarm.soundName,
+                       label: alarm.label)
         : nil
         
         let config = buildConfiguration(for: alarm, schedule: .fixed(date), childID: childID, snoozeIntent: snoozeIntent)
@@ -209,7 +212,12 @@ class AlarmService {
         
         // 如果没有传入特定的 snoozeIntent (比如在 scheduleFixed 外部调用)，则根据 alarm 配置生成
         let finalSnoozeIntent = snoozeIntent ?? (
-            alarm.isSnoozeEnabled ? SnoozeIntent(alarmID: childID.uuidString, duration: alarm.snoozeDuration) : nil
+            alarm.isSnoozeEnabled ? SnoozeIntent(
+                alarmID: childID.uuidString,
+                duration: alarm.snoozeDuration,
+                soundName: alarm.soundName,
+                label: alarm.label
+            ) : nil
         )
         
         return MyAppAlarmConfiguration(
