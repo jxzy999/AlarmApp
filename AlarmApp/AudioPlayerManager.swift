@@ -34,7 +34,7 @@ class AudioPlayerManager {
         
         // 尝试查找文件 (m4a)
         guard let url = Bundle.main.url(forResource: soundName, withExtension: "m4a") else {
-            print("找不到音频文件: \(soundName)")
+            Log.d("找不到音频文件: \(soundName)")
             return
         }
         
@@ -48,9 +48,9 @@ class AudioPlayerManager {
             audioPlayer?.play()
             
             playingSoundName = soundName
-            print("正在试听: \(soundName)")
+            Log.d("正在试听: \(soundName)")
         } catch {
-            print("播放失败: \(error)")
+            Log.d("播放失败: \(error)")
         }
     }
     

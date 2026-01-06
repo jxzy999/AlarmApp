@@ -66,7 +66,7 @@ class HolidayService {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let config = try JSONDecoder().decode(HolidayYearConfig.self, from: data)
                 
-                print("✅ 成功下载 \(year) 年节假日配置")
+                Log.d("✅ 成功下载 \(year) 年节假日配置")
                 
                 // 解析数据
                 for day in config.days {
@@ -81,7 +81,7 @@ class HolidayService {
                     }
                 }
             } catch {
-                print("⚠️ 获取 \(year) 年数据失败 (可能是还没发布): \(error.localizedDescription)")
+                Log.d("⚠️ 获取 \(year) 年数据失败 (可能是还没发布): \(error.localizedDescription)")
             }
         }
         

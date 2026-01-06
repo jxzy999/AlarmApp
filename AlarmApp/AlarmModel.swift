@@ -103,33 +103,33 @@ extension Locale.Weekday {
 
 extension AlarmModel {
     func debugLog() {
-        print("---------------------------------------")
-        print("⏰ [AlarmModel Debug Info]")
-        print("🆔 ID: \(id)")
-        print("🏷️ Label: \(label)")
-        print("🕒 Time: \(timeString) (Raw: \(time))")
-        print("🔘 Enabled: \(isEnabled)")
+        Log.alarm("---------------------------------------")
+        Log.alarm("⏰ [AlarmModel Debug Info]")
+        Log.alarm("🆔 ID: \(id)")
+        Log.alarm("🏷️ Label: \(label)")
+        Log.alarm("🕒 Time: \(timeString) (Raw: \(time))")
+        Log.alarm("🔘 Enabled: \(isEnabled)")
         
-        print("🎵 Sound: \(soundName)")
-        print("🔁 Repeat Mode: \(repeatMode.rawValue)")
+        Log.alarm("🎵 Sound: \(soundName)")
+        Log.alarm("🔁 Repeat Mode: \(repeatMode.rawValue)")
         
         switch repeatMode {
         case .weekly:
-            print("   └ Days: \(repeatDays) (1=Sun, 7=Sat)")
+            Log.alarm("   └ Days: \(repeatDays) (1=Sun, 7=Sat)")
         case .monthly:
-            print("   └ Days: \(repeatMonthDays)")
+            Log.alarm("   └ Days: \(repeatMonthDays)")
         case .yearly:
             let formatter = DateFormatter()
             formatter.dateFormat = "MM-dd"
-            print("   └ Date: \(formatter.string(from: repeatYearDate))")
+            Log.alarm("   └ Date: \(formatter.string(from: repeatYearDate))")
         default:
             break
         }
         
-        print("💤 Snooze: \(isSnoozeEnabled ? "Enabled" : "Disabled")")
+        Log.alarm("💤 Snooze: \(isSnoozeEnabled ? "Enabled" : "Disabled")")
         if isSnoozeEnabled {
-            print("   └ Duration: \(snoozeDuration) min")
+            Log.alarm("   └ Duration: \(snoozeDuration) min")
         }
-        print("---------------------------------------")
+        Log.alarm("---------------------------------------")
     }
 }

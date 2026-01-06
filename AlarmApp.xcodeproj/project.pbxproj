@@ -6,8 +6,41 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		637051522F0D288800E79D21 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 637051512F0D288800E79D21 /* WidgetKit.framework */; };
+		637051542F0D288800E79D21 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 637051532F0D288800E79D21 /* SwiftUI.framework */; };
+		637051632F0D288A00E79D21 /* SnoozeWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6370514F2F0D288800E79D21 /* SnoozeWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		637051612F0D288A00E79D21 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 637050F82F0CD8C300E79D21 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6370514E2F0D288800E79D21;
+			remoteInfo = SnoozeWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		637051682F0D288A00E79D21 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				637051632F0D288A00E79D21 /* SnoozeWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		637051002F0CD8C300E79D21 /* AlarmApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlarmApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6370514F2F0D288800E79D21 /* SnoozeWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SnoozeWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		637051512F0D288800E79D21 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		637051532F0D288800E79D21 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -18,6 +51,20 @@
 			);
 			target = 637050FF2F0CD8C300E79D21 /* AlarmApp */;
 		};
+		637051672F0D288A00E79D21 /* Exceptions for "SnoozeWidget" folder in "SnoozeWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */;
+		};
+		6370516E2F0D2BB900E79D21 /* Exceptions for "AlarmApp" folder in "SnoozeWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SnoozeActivity.swift,
+			);
+			target = 6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -25,8 +72,17 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				6370511D2F0CE5B700E79D21 /* Exceptions for "AlarmApp" folder in "AlarmApp" target */,
+				6370516E2F0D2BB900E79D21 /* Exceptions for "AlarmApp" folder in "SnoozeWidgetExtension" target */,
 			);
 			path = AlarmApp;
+			sourceTree = "<group>";
+		};
+		637051552F0D288800E79D21 /* SnoozeWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				637051672F0D288A00E79D21 /* Exceptions for "SnoozeWidget" folder in "SnoozeWidgetExtension" target */,
+			);
+			path = SnoozeWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +95,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6370514C2F0D288800E79D21 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				637051542F0D288800E79D21 /* SwiftUI.framework in Frameworks */,
+				637051522F0D288800E79D21 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +111,8 @@
 			isa = PBXGroup;
 			children = (
 				637051022F0CD8C300E79D21 /* AlarmApp */,
+				637051552F0D288800E79D21 /* SnoozeWidget */,
+				637051502F0D288800E79D21 /* Frameworks */,
 				637051012F0CD8C300E79D21 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,8 +121,18 @@
 			isa = PBXGroup;
 			children = (
 				637051002F0CD8C300E79D21 /* AlarmApp.app */,
+				6370514F2F0D288800E79D21 /* SnoozeWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		637051502F0D288800E79D21 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				637051512F0D288800E79D21 /* WidgetKit.framework */,
+				637051532F0D288800E79D21 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -68,10 +145,12 @@
 				637050FC2F0CD8C300E79D21 /* Sources */,
 				637050FD2F0CD8C300E79D21 /* Frameworks */,
 				637050FE2F0CD8C300E79D21 /* Resources */,
+				637051682F0D288A00E79D21 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				637051622F0D288A00E79D21 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				637051022F0CD8C300E79D21 /* AlarmApp */,
@@ -82,6 +161,28 @@
 			productName = AlarmApp;
 			productReference = 637051002F0CD8C300E79D21 /* AlarmApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 637051642F0D288A00E79D21 /* Build configuration list for PBXNativeTarget "SnoozeWidgetExtension" */;
+			buildPhases = (
+				6370514B2F0D288800E79D21 /* Sources */,
+				6370514C2F0D288800E79D21 /* Frameworks */,
+				6370514D2F0D288800E79D21 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				637051552F0D288800E79D21 /* SnoozeWidget */,
+			);
+			name = SnoozeWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SnoozeWidgetExtension;
+			productReference = 6370514F2F0D288800E79D21 /* SnoozeWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -94,6 +195,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					637050FF2F0CD8C300E79D21 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					6370514E2F0D288800E79D21 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -113,12 +217,20 @@
 			projectRoot = "";
 			targets = (
 				637050FF2F0CD8C300E79D21 /* AlarmApp */,
+				6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		637050FE2F0CD8C300E79D21 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6370514D2F0D288800E79D21 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +247,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6370514B2F0D288800E79D21 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		637051622F0D288A00E79D21 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */;
+			targetProxy = 637051612F0D288A00E79D21 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6370510B2F0CD8C400E79D21 /* Debug */ = {
@@ -270,6 +397,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AlarmApp/Info.plist;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -304,6 +432,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AlarmApp/Info.plist;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -320,6 +449,68 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		637051652F0D288A00E79D21 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YWTP3P62D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SnoozeWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SnoozeWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhijian.demo.AlarmApp.SnoozeWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		637051662F0D288A00E79D21 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2YWTP3P62D;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SnoozeWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SnoozeWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhijian.demo.AlarmApp.SnoozeWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -344,6 +535,15 @@
 			buildConfigurations = (
 				6370510E2F0CD8C400E79D21 /* Debug */,
 				6370510F2F0CD8C400E79D21 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		637051642F0D288A00E79D21 /* Build configuration list for PBXNativeTarget "SnoozeWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				637051652F0D288A00E79D21 /* Debug */,
+				637051662F0D288A00E79D21 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -142,25 +142,21 @@ class AlarmService {
     func scheduleSnooze(originalID: UUID, minutes: Int, soundName: String, label: String) async {
         let now = Date()
         let fireDate = now.addingTimeInterval(TimeInterval(minutes * 60))
-        
-        // 生成本次小睡的唯一 ID
         let snoozeID = UUID()
         
-        // 1. 关键点：构建“下一次小睡”的 Intent
-        // 当这个小睡闹钟响铃时，如果用户再次点击“稍后”，会再次触发 SnoozeIntent
-        // 注意：这里的 alarmID 传入的是当前的 snoozeID，这样触发时能停止当前这个小睡闹钟
+        // 1. 构造 Intent (同前)
         let nextSnoozeIntent = SnoozeIntent(
             alarmID: snoozeID.uuidString,
-            duration: minutes,    // 保持相同的时长
-            soundName: soundName, // 保持相同的铃声
-            label: label          // 保持相同的标签
+            duration: minutes,
+            soundName: soundName,
+            label: label
         )
         
-        // 2. UI 配置：把按钮加回来
+        // 2. 构造配置 (同前)
         let alertContent = AlarmPresentation.Alert(
             title: "稍后提醒",
-            secondaryButton: .snoozeButton, // <--- 显示按钮
-            secondaryButtonBehavior: .custom // <--- 设为自定义行为
+            secondaryButton: .snoozeButton,
+            secondaryButtonBehavior: .custom
         )
         
         let attributes = AlarmAttributes(
@@ -169,11 +165,9 @@ class AlarmService {
             tintColor: .orange
         )
         
-        // 3. 处理铃声格式
         let soundFileName = soundName.hasSuffix(".m4a") ? soundName : "\(soundName).m4a"
         let alertSound = AlertConfiguration.AlertSound.named(soundFileName)
         
-        // 4. 组装配置
         let config = MyAppAlarmConfiguration(
             schedule: .fixed(fireDate),
             attributes: attributes,
@@ -182,9 +176,39 @@ class AlarmService {
             sound: alertSound
         )
         
-        // 提交
-        let _ = try? await alarmManager.schedule(id: snoozeID, configuration: config)
-        print("已设定小睡: \(minutes)分钟后, 铃声: \(soundName), ID: \(snoozeID)")
+        // 3. 提交给系统
+        do {
+            let _ = try await alarmManager.schedule(id: snoozeID, configuration: config)
+            Log.d("已设定小睡闹钟: \(snoozeID)")
+            
+            
+            
+            
+            // --- 核心修改：开启 Live Activity ---
+            if ActivityAuthorizationInfo().areActivitiesEnabled {
+                Log.d("ActivitiesEnabled is true")
+                let snoozeAttrs = SnoozeWidgetAttributes(label: label, soundName: soundName, alarmID: snoozeID.uuidString)
+                let contentState = SnoozeWidgetAttributes.ContentState(fireDate: fireDate)
+                
+                // 适配 iOS 16.2+ 的 API
+                let activityContent = ActivityContent(state: contentState, staleDate: fireDate.addingTimeInterval(60))
+                
+                do {
+                    let activity = try Activity.request(
+                        attributes: snoozeAttrs,
+                        content: activityContent,
+                        pushType: nil
+                    )
+                    Log.d("✅ 实时活动已开启 ID: \(activity.id)")
+                } catch {
+                    Log.d("❌ 无法开启实时活动: \(error)")
+                }
+            }
+            // ---------------------------------
+            
+        } catch {
+            Log.d("❌ 小睡设定失败: \(error)")
+        }
     }
     
     // MARK: - 辅助：通用单次调度
@@ -204,13 +228,13 @@ class AlarmService {
         
         do {
             let systemAlarm = try await alarmManager.schedule(id: childID, configuration: config)
-            print("✅ 成功调度 - ID: \(systemAlarm.id) ， date: \(date)")
+            Log.d("✅ 成功调度 - ID: \(systemAlarm.id) ， date: \(date)")
             
             // --- 关键：追加 ID 到列表，而不是覆盖 ---
             appendSystemID(childID, for: alarm.id)
             
         } catch {
-            print("❌ 调度失败: \(error)")
+            Log.d("❌ 调度失败: \(error)")
         }
         
         alarm.debugLog()
@@ -281,7 +305,7 @@ class AlarmService {
             nextDate = calendar.date(byAdding: .day, value: 1, to: nextDate)!
         }
         
-        print("DEBUG: 单次闹钟设定 - 当前时间: \(now), 目标响铃: \(nextDate)")
+        Log.d("DEBUG: 单次闹钟设定 - 当前时间: \(now), 目标响铃: \(nextDate)")
         return nextDate
     }
     
@@ -323,7 +347,7 @@ class AlarmService {
         for idStr in ids {
             if let uuid = UUID(uuidString: idStr) {
                 try? alarmManager.cancel(id: uuid)
-                print("🗑️ 已清理 ID: \(uuid)")
+                Log.d("🗑️ 已清理 ID: \(uuid)")
             }
         }
         
