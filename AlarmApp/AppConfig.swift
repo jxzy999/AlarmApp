@@ -97,4 +97,8 @@ extension AlarmButton {
     static var snoozeButton: Self {
         AlarmButton(text: "稍后", textColor: .primary, systemImageName: "moon.zzz.fill")
     }
+    
+    static var stopButton: Self {
+        AlarmButton(text: "停止", textColor: .black, systemImageName: "pause.fill")
+    }
 }

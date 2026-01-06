@@ -141,7 +141,8 @@ class AlarmService {
     // MARK: - 小睡业务逻辑
     func scheduleSnooze(originalID: UUID, minutes: Int, soundName: String, label: String) async {
         let now = Date()
-        let fireDate = now.addingTimeInterval(TimeInterval(minutes * 60))
+        let timeInterval = TimeInterval(minutes * 60)
+        let fireDate = now.addingTimeInterval(timeInterval)
         let snoozeID = UUID()
         
         // 1. 构造 Intent (同前)
@@ -159,8 +160,10 @@ class AlarmService {
             secondaryButtonBehavior: .custom
         )
         
+        let countdownContent = AlarmPresentation.Countdown(title: "稍后提醒", pauseButton: .stopButton)
+        
         let attributes = AlarmAttributes(
-            presentation: AlarmPresentation(alert: alertContent),
+            presentation: AlarmPresentation(alert: alertContent, countdown: countdownContent),
             metadata: AppAlarmMetadata(label: label, soundName: soundName),
             tintColor: .orange
         )
@@ -169,7 +172,8 @@ class AlarmService {
         let alertSound = AlertConfiguration.AlertSound.named(soundFileName)
         
         let config = MyAppAlarmConfiguration(
-            schedule: .fixed(fireDate),
+            countdownDuration: .init(preAlert: timeInterval, postAlert: timeInterval),
+//            schedule: .fixed(fireDate),
             attributes: attributes,
             stopIntent: StopIntent(alarmID: snoozeID.uuidString),
             secondaryIntent: nextSnoozeIntent,
@@ -180,31 +184,6 @@ class AlarmService {
         do {
             let _ = try await alarmManager.schedule(id: snoozeID, configuration: config)
             Log.d("已设定小睡闹钟: \(snoozeID)")
-            
-            
-            
-            
-            // --- 核心修改：开启 Live Activity ---
-            if ActivityAuthorizationInfo().areActivitiesEnabled {
-                Log.d("ActivitiesEnabled is true")
-                let snoozeAttrs = SnoozeWidgetAttributes(label: label, soundName: soundName, alarmID: snoozeID.uuidString)
-                let contentState = SnoozeWidgetAttributes.ContentState(fireDate: fireDate)
-                
-                // 适配 iOS 16.2+ 的 API
-                let activityContent = ActivityContent(state: contentState, staleDate: fireDate.addingTimeInterval(60))
-                
-                do {
-                    let activity = try Activity.request(
-                        attributes: snoozeAttrs,
-                        content: activityContent,
-                        pushType: nil
-                    )
-                    Log.d("✅ 实时活动已开启 ID: \(activity.id)")
-                } catch {
-                    Log.d("❌ 无法开启实时活动: \(error)")
-                }
-            }
-            // ---------------------------------
             
         } catch {
             Log.d("❌ 小睡设定失败: \(error)")
