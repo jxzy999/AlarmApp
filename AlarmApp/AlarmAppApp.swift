@@ -12,7 +12,7 @@ import SwiftData
 struct AlarmAppApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            AlarmModel.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,7 @@ struct AlarmAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AlarmListView()
         }
         .modelContainer(sharedModelContainer)
     }
