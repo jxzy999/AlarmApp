@@ -61,7 +61,8 @@
 		6370516E2F0D2BB900E79D21 /* Exceptions for "AlarmApp" folder in "SnoozeWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				SnoozeActivity.swift,
+				AppAlarmMetadata.swift,
+				AppConfig.swift,
 			);
 			target = 6370514E2F0D288800E79D21 /* SnoozeWidgetExtension */;
 		};

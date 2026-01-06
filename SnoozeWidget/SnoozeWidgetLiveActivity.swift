@@ -14,74 +14,178 @@ import AlarmKit
 
 struct SnoozeWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
-            ActivityConfiguration(for: SnoozeWidgetAttributes.self) { context in
-                // --- 锁屏界面 UI ---
-                HStack {
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Image(systemName: "zzzz")
-                                .foregroundStyle(.orange)
-                            Text("稍后提醒: \(context.attributes.label)")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                        }
-                        
-                        // 倒计时核心组件
-                        Text(timerInterval: Date()...context.state.fireDate, countsDown: true)
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundStyle(.orange)
-                            .monospacedDigit()
-                    }
-                    
-                    Spacer()
-                    
-                    // 取消按钮
-                    Button(intent: CancelSnoozeIntent(alarmID: context.attributes.alarmID)) {
-                        Text("取消")
-                            .font(.callout.bold())
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.gray.opacity(0.5))
-                    .clipShape(Capsule())
+        ActivityConfiguration(for: AlarmAttributes<AppAlarmMetadata>.self) { context in
+            // The Lock Screen presentation.
+            lockScreenView(attributes: context.attributes, state: context.state)
+        } dynamicIsland: { context in
+            // The presentations that appear in the Dynamic Island.
+            DynamicIsland {
+                // The expanded Dynamic Island presentation.
+                DynamicIslandExpandedRegion(.leading) {
+                    alarmTitle(attributes: context.attributes, state: context.state)
                 }
-                .padding()
-                .activityBackgroundTint(Color.black.opacity(0.8))
-                .activitySystemActionForegroundColor(Color.orange)
-                
-            } dynamicIsland: { context in
-                // --- 灵动岛 UI (可选) ---
-                DynamicIsland {
-                    // 展开区域
-                    DynamicIslandExpandedRegion(.leading) {
-                        Label("稍后", systemImage: "zzzz").font(.caption).foregroundStyle(.orange)
-                    }
-                    DynamicIslandExpandedRegion(.trailing) {
-                        Text(timerInterval: Date()...context.state.fireDate, countsDown: true)
-                            .font(.title2)
-                            .foregroundStyle(.orange)
-                            .monospacedDigit()
-                    }
-                    DynamicIslandExpandedRegion(.bottom) {
-                         // 岛内也放一个取消按钮
-                         Button(intent: CancelSnoozeIntent(alarmID: context.attributes.alarmID)) {
-                             Text("取消小睡").frame(maxWidth: .infinity)
-                         }
-                         .buttonStyle(.bordered)
-                         .tint(.white)
-                    }
-                } compactLeading: {
-                    Image(systemName: "zzzz").foregroundStyle(.orange)
-                } compactTrailing: {
-                    Text(timerInterval: Date()...context.state.fireDate, countsDown: true)
-                        .foregroundStyle(.orange)
-                        .monospacedDigit()
-                        .font(.caption)
-                } minimal: {
-                    Image(systemName: "zzzz").foregroundStyle(.orange)
+                DynamicIslandExpandedRegion(.trailing) {
+                    rightTopIcon(metadata: context.attributes.metadata)
                 }
+                DynamicIslandExpandedRegion(.bottom) {
+                    bottomView(attributes: context.attributes, state: context.state)
+                }
+            } compactLeading: {
+                // The compact leading presentation.
+                countdown(state: context.state, maxWidth: 44)
+                    .foregroundStyle(context.attributes.tintColor)
+            } compactTrailing: {
+                // The compact trailing presentation.
+                AlarmProgressView(icon: context.attributes.metadata?.icon,
+                                  mode: context.state.mode,
+                                  tint: context.attributes.tintColor)
+            } minimal: {
+                // The minimal presentation.
+                AlarmProgressView(icon: context.attributes.metadata?.icon,
+                                  mode: context.state.mode,
+                                  tint: context.attributes.tintColor)
+            }
+            .keylineTint(context.attributes.tintColor)
+        }
+    }
+    
+    func lockScreenView(attributes: AlarmAttributes<AppAlarmMetadata>, state: AlarmPresentationState) -> some View {
+        VStack {
+            HStack(alignment: .top) {
+                alarmTitle(attributes: attributes, state: state)
+                Spacer()
+                rightTopIcon(metadata: attributes.metadata)
+            }
+            
+            bottomView(attributes: attributes, state: state)
+        }
+        .padding(.all, 12)
+    }
+    
+    func bottomView(attributes: AlarmAttributes<AppAlarmMetadata>, state: AlarmPresentationState) -> some View {
+        HStack {
+            countdown(state: state, maxWidth: 150)
+                .font(.system(size: 40, design: .rounded))
+            Spacer()
+            AlarmControls(presentation: attributes.presentation, state: state)
+        }
+    }
+    
+    func countdown(state: AlarmPresentationState, maxWidth: CGFloat = .infinity) -> some View {
+        Group {
+            switch state.mode {
+            case .countdown(let countdown):
+                Text(timerInterval: Date.now ... countdown.fireDate, countsDown: true)
+            case .paused(let state):
+                let remaining = Duration.seconds(state.totalCountdownDuration - state.previouslyElapsedDuration)
+                let pattern: Duration.TimeFormatStyle.Pattern = remaining > .seconds(60 * 60) ? .hourMinuteSecond : .minuteSecond
+                Text(remaining.formatted(.time(pattern: pattern)))
+            default:
+                EmptyView()
             }
         }
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        .frame(maxWidth: maxWidth, alignment: .leading)
+    }
+    
+    @ViewBuilder func alarmTitle(attributes: AlarmAttributes<AppAlarmMetadata>, state: AlarmPresentationState) -> some View {
+        let title: LocalizedStringResource? = switch state.mode {
+        case .countdown:
+            attributes.presentation.countdown?.title
+        case .paused:
+            attributes.presentation.paused?.title
+        default:
+            nil
+        }
+        
+        Text(title ?? "")
+            .font(.title3)
+            .fontWeight(.semibold)
+            .lineLimit(1)
+            .padding(.leading, 6)
+    }
+    
+    @ViewBuilder func rightTopIcon(metadata: AppAlarmMetadata?) -> some View {
+        if let icon = metadata?.icon {
+            Image(systemName: icon)
+            .font(.body)
+            .fontWeight(.medium)
+            .lineLimit(1)
+            .padding(.trailing, 6)
+        } else {
+            EmptyView()
+        }
+    }
 }
 
+struct AlarmProgressView: View {
+    var icon: String?
+    var mode: AlarmPresentationState.Mode
+    var tint: Color
+    
+    var body: some View {
+        Group {
+            switch mode {
+            case .countdown(let countdown):
+                ProgressView(
+                    timerInterval: Date.now ... countdown.fireDate,
+                    countsDown: true,
+                    label: { EmptyView() },
+                    currentValueLabel: {
+                        Image(systemName: icon ?? "alarm")
+                            .scaleEffect(0.9)
+                    })
+            case .paused(let pausedState):
+                let remaining = pausedState.totalCountdownDuration - pausedState.previouslyElapsedDuration
+                ProgressView(value: remaining,
+                             total: pausedState.totalCountdownDuration,
+                             label: { EmptyView() },
+                             currentValueLabel: {
+                    Image(systemName: "pause.fill")
+                        .scaleEffect(0.8)
+                })
+            default:
+                EmptyView()
+            }
+        }
+        .progressViewStyle(.circular)
+        .foregroundStyle(tint)
+        .tint(tint)
+    }
+}
+
+struct AlarmControls: View {
+    var presentation: AlarmPresentation
+    var state: AlarmPresentationState
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ButtonView(config: presentation.alert.stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
+        }
+    }
+}
+
+struct ButtonView<I>: View where I: AppIntent {
+    var config: AlarmButton
+    var intent: I
+    var tint: Color
+    
+    init?(config: AlarmButton?, intent: I, tint: Color) {
+        guard let config else { return nil }
+        self.config = config
+        self.intent = intent
+        self.tint = tint
+    }
+    
+    var body: some View {
+        Button(intent: intent) {
+            Label(config.text, systemImage: config.systemImageName)
+                .lineLimit(1)
+        }
+        .tint(tint)
+        .buttonStyle(.borderedProminent)
+        .frame(width: 96, height: 30)
+    }
+}

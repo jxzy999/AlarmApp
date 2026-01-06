@@ -166,7 +166,6 @@ class AlarmService {
                                     schedule: Alarm.Schedule,
                                     childID: UUID) -> MyAppAlarmConfiguration {
         
-        // 只有当传入了 snoozeIntent 时才显示按钮
         let secondaryBtn: AlarmButton? = alarm.isSnoozeEnabled ? .snoozeButton : nil
         let behavior: AlarmPresentation.Alert.SecondaryButtonBehavior? = alarm.isSnoozeEnabled ? .countdown : nil
         
@@ -183,7 +182,7 @@ class AlarmService {
             let countdownContent = AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: alarm.label),
                                                                pauseButton: .stopButton)
             
-            let pausedContent = AlarmPresentation.Paused(title: "Paused",
+            let pausedContent = AlarmPresentation.Paused(title: "暂停",
                                                          resumeButton: .resumeButton)
             
             presentation = AlarmPresentation(alert: alertContent, countdown: countdownContent, paused: pausedContent)
@@ -191,7 +190,7 @@ class AlarmService {
         
         let attributes = AlarmAttributes(
             presentation: presentation,
-            metadata: AppAlarmMetadata(label: alarm.label, soundName: alarm.soundName),
+            metadata: AppAlarmMetadata(label: alarm.label, icon: iconForMode(alarm.repeatMode)),
             tintColor: .blue
         )
         
@@ -212,6 +211,17 @@ class AlarmService {
             secondaryIntent: finalSnoozeIntent,
             sound: alertSound
         )
+    }
+    
+    // 辅助：根据模式返回图标
+    private func iconForMode(_ mode: AlarmRepeatMode) -> String {
+        switch mode {
+        case .once: return "alarm"
+        case .weekly: return "calendar"
+        case .monthly: return "calendar.badge.clock"
+        case .yearly: return "birthday.cake"
+        case .holiday: return "suitcase.fill" // 节假日用公文包表示工作/休假
+        }
     }
     
     private func calculateNextFireDate(from time: Date) -> Date {

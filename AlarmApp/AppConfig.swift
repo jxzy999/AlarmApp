@@ -10,21 +10,11 @@ import AlarmKit
 import AppIntents
 import SwiftUI
 
-// MARK: - 1. Metadata (传递给系统的数据)
-// 用于在锁屏、灵动岛显示闹钟的自定义信息
-struct AppAlarmMetadata: AlarmMetadata, Codable {
-    var label: String
-    var soundName: String
-    init(label: String = "闹钟", soundName: String = "Bell Tower") {
-        self.label = label
-        self.soundName = soundName
-    }
-}
-
+// MARK: - Metadata (传递给系统的数据)
 typealias MyAppAlarmConfiguration = AlarmManager.AlarmConfiguration<AppAlarmMetadata>
 
 
-// MARK: - 2. App Intents (交互意图)
+// MARK: - App Intents (交互意图)
 // 当闹钟响起时，用户点击按钮触发的动作
 
 struct StopIntent: LiveActivityIntent {
