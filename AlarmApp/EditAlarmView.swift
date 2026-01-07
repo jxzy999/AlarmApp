@@ -14,6 +14,7 @@ struct EditAlarmView: View {
     @Environment(\.modelContext) var modelContext
     
     var existingAlarm: AlarmModel?
+    @State private var hasLoadedData: Bool = false
     
     // --- 状态 ---
     @State private var time: Date = Date()
@@ -40,14 +41,14 @@ struct EditAlarmView: View {
                 Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
                 
                 List {
-                    // 1. 时间选择 (修复居中问题)
+                    // 1. 时间选择
                     Section {
                         HStack {
                             Spacer()
                             DatePicker("时间", selection: $time, displayedComponents: .hourAndMinute)
                                 .datePickerStyle(.wheel)
                                 .labelsHidden()
-                                .frame(width: 320) // 给定一个合理的宽度使其看起来居中
+                                .frame(width: 320)
                             Spacer()
                         }
                         .listRowBackground(Color.clear)
@@ -75,7 +76,6 @@ struct EditAlarmView: View {
                             TextField("闹钟", text: $label).multilineTextAlignment(.trailing)
                         }
                         
-                        // --- 修改开始 ---
                         NavigationLink {
                             RingtoneSelectView(selectedSound: $soundName)
                         } label: {
@@ -112,7 +112,6 @@ struct EditAlarmView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("保存") { saveAlarm() } }
             }
-            // 修复回显：使用 task 确保视图加载前数据已准备好
             .task {
                 loadData()
             }
@@ -128,7 +127,6 @@ struct EditAlarmView: View {
             EmptyView()
             
         case .weekly:
-            // 修复点选问题：添加 .buttonStyle(.borderless)
             HStack(spacing: 0) {
                 ForEach(Array(weekDaysOrdered.enumerated()), id: \.offset) { index, dayRawValue in
                     let isSelected = selectedWeekdays.contains(dayRawValue)
@@ -145,13 +143,12 @@ struct EditAlarmView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: 44)
-                    .buttonStyle(.borderless) // <--- 关键修复：防止 List 点击冲突
+                    .buttonStyle(.borderless)
                 }
             }
             .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
             
         case .monthly:
-            // 修复点选问题：添加 .buttonStyle(.borderless)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
                 ForEach(1...31, id: \.self) { day in
                     let isSelected = selectedMonthDays.contains(day)
@@ -169,7 +166,7 @@ struct EditAlarmView: View {
                         }
                         .frame(height: 30)
                     }
-                    .buttonStyle(.borderless) // <--- 关键修复
+                    .buttonStyle(.borderless)
                 }
             }
             .padding(.vertical, 8)
@@ -188,6 +185,11 @@ struct EditAlarmView: View {
     // MARK: - Logic
     
     func loadData() {
+        if hasLoadedData { return }
+        
+        // 标记为已加载
+        hasLoadedData = true
+        
         if let alarm = existingAlarm {
             // 确保所有字段都从 existingAlarm 同步到 State
             time = alarm.time
@@ -201,9 +203,7 @@ struct EditAlarmView: View {
             selectedYearDate = alarm.repeatYearDate
             isSnoozeEnabled = alarm.isSnoozeEnabled
             snoozeDuration = alarm.snoozeDuration
-            if soundName.isEmpty {
-                soundName = alarm.soundName
-            }
+            soundName = alarm.soundName
         } else {
             // 如果是新增，初始化一些默认值
             time = Date()
@@ -211,9 +211,7 @@ struct EditAlarmView: View {
             let calendar = Calendar.current
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: time)
             time = calendar.date(from: components) ?? Date()
-            if soundName.isEmpty {
-                soundName = "Bell Tower"
-            }
+            soundName = "Bell Tower"
         }
     }
     
