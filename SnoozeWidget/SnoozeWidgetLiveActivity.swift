@@ -76,10 +76,10 @@ struct SnoozeWidgetLiveActivity: Widget {
             switch state.mode {
             case .countdown(let countdown):
                 Text(timerInterval: Date.now ... countdown.fireDate, countsDown: true)
-            case .paused(let state):
-                let remaining = Duration.seconds(state.totalCountdownDuration - state.previouslyElapsedDuration)
-                let pattern: Duration.TimeFormatStyle.Pattern = remaining > .seconds(60 * 60) ? .hourMinuteSecond : .minuteSecond
-                Text(remaining.formatted(.time(pattern: pattern)))
+//            case .paused(let state):
+//                let remaining = Duration.seconds(state.totalCountdownDuration - state.previouslyElapsedDuration)
+//                let pattern: Duration.TimeFormatStyle.Pattern = remaining > .seconds(60 * 60) ? .hourMinuteSecond : .minuteSecond
+//                Text(remaining.formatted(.time(pattern: pattern)))
             default:
                 EmptyView()
             }
@@ -94,8 +94,8 @@ struct SnoozeWidgetLiveActivity: Widget {
         let title: LocalizedStringResource? = switch state.mode {
         case .countdown:
             attributes.presentation.countdown?.title
-        case .paused:
-            attributes.presentation.paused?.title
+//        case .paused:
+//            attributes.presentation.paused?.title
         default:
             nil
         }
@@ -137,15 +137,15 @@ struct AlarmProgressView: View {
                         Image(systemName: icon ?? "alarm")
                             .scaleEffect(0.9)
                     })
-            case .paused(let pausedState):
-                let remaining = pausedState.totalCountdownDuration - pausedState.previouslyElapsedDuration
-                ProgressView(value: remaining,
-                             total: pausedState.totalCountdownDuration,
-                             label: { EmptyView() },
-                             currentValueLabel: {
-                    Image(systemName: "pause.fill")
-                        .scaleEffect(0.8)
-                })
+//            case .paused(let pausedState):
+//                let remaining = pausedState.totalCountdownDuration - pausedState.previouslyElapsedDuration
+//                ProgressView(value: remaining,
+//                             total: pausedState.totalCountdownDuration,
+//                             label: { EmptyView() },
+//                             currentValueLabel: {
+//                    Image(systemName: "pause.fill")
+//                        .scaleEffect(0.8)
+//                })
             default:
                 EmptyView()
             }
@@ -162,7 +162,8 @@ struct AlarmControls: View {
     
     var body: some View {
         HStack(spacing: 4) {
-            ButtonView(config: presentation.alert.stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
+            //ButtonView(config: presentation.alert.stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
+            ButtonView(config: .stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
         }
     }
 }

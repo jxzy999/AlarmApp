@@ -71,6 +71,6 @@ extension AlarmButton {
     }
     
     static var resumeButton: Self {
-        AlarmButton(text: "Start", textColor: .black, systemImageName: "play.fill")
+        AlarmButton(text: "开始", textColor: .black, systemImageName: "play.fill")
     }
 }

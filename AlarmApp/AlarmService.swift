@@ -182,10 +182,10 @@ class AlarmService {
             let countdownContent = AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: alarm.label),
                                                                pauseButton: .stopButton)
             
-            let pausedContent = AlarmPresentation.Paused(title: "暂停",
-                                                         resumeButton: .resumeButton)
+//            let pausedContent = AlarmPresentation.Paused(title: "暂停", resumeButton: .resumeButton)
+//            presentation = AlarmPresentation(alert: alertContent, countdown: countdownContent, paused: pausedContent)
             
-            presentation = AlarmPresentation(alert: alertContent, countdown: countdownContent, paused: pausedContent)
+            presentation = AlarmPresentation(alert: alertContent, countdown: countdownContent)
         }
         
         let attributes = AlarmAttributes(
