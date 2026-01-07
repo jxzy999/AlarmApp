@@ -263,6 +263,45 @@ class AlarmService {
         return nextDate
     }
     
+    // MARK: - 处理用户点击“停止”后的业务逻辑：
+    /// 1. 如果是单次闹钟 -> 关闭开关
+    /// 2. 如果是重复闹钟 -> 检查是否需要补货
+    @MainActor
+    func handleStopAction(alarmModelID: UUID) async {
+        do {
+            // 1. 创建临时的 ModelContainer 来获取最新的数据状态
+            // (这是为了在 Intent 可能的后台进程中安全读写)
+            let schema = Schema([AlarmModel.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let container = try ModelContainer(for: schema, configurations: [config])
+            let context = container.mainContext
+            
+            // 2. 查找对应的 AlarmModel
+            let descriptor = FetchDescriptor<AlarmModel>(predicate: #Predicate { $0.id == alarmModelID })
+            
+            if let alarm = try context.fetch(descriptor).first {
+                
+                Log.d("🛑 处理停止动作: \(alarm.label) (模式: \(alarm.repeatMode.rawValue))")
+                
+                if alarm.repeatMode == .once {
+                    // --- Case A: 单次闹钟 ---
+                    // 任务完成，关闭开关
+                    alarm.isEnabled = false
+                    
+                    // 保存更改到数据库
+                    try context.save()
+                    Log.d("✅ 单次闹钟已自动关闭: \(alarm.label)")
+                    
+                } else {
+                    // --- Case B: 重复/节假日闹钟 ---
+                    await self.checkAndReplenish(alarmID: alarmModelID)
+                }
+            }
+        } catch {
+            Log.d("❌ 处理停止动作失败: \(error)")
+        }
+    }
+    
     
     // MARK: - 检查并补货 (Check & Replenish)
     

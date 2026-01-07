@@ -37,11 +37,10 @@ struct StopIntent: LiveActivityIntent {
         
         Log.d("StopIntent: \(alarmID) - \(String(describing: alarmModelID))")
         
-        // 1. 检查是否需要补货
+        // 1. 处理业务逻辑 (关开关 或 补货)
         if let alarmModelID = alarmModelID,
            let parentUUID = UUID(uuidString: alarmModelID) {
-            // 异步触发检查，不阻塞 Intent 返回
-            await AlarmService.shared.checkAndReplenish(alarmID: parentUUID)
+            await AlarmService.shared.handleStopAction(alarmModelID: parentUUID)
         }
         
         // 2. 停止当前响铃的闹钟

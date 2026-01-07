@@ -69,6 +69,7 @@ struct AlarmListView: View {
         AlarmService.shared.deleteAlarm(alarm)
         // 从数据库移除
         modelContext.delete(alarm)
+        try? modelContext.save()
     }
 }
 
