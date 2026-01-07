@@ -67,7 +67,7 @@ struct SnoozeWidgetLiveActivity: Widget {
             countdown(state: state, maxWidth: 150)
                 .font(.system(size: 40, design: .rounded))
             Spacer()
-            AlarmControls(presentation: attributes.presentation, state: state)
+            AlarmControls(attributes: attributes, state: state)
         }
     }
     
@@ -157,13 +157,14 @@ struct AlarmProgressView: View {
 }
 
 struct AlarmControls: View {
-    var presentation: AlarmPresentation
+    //var presentation: AlarmPresentation
+    var attributes: AlarmAttributes<AppAlarmMetadata>
     var state: AlarmPresentationState
     
     var body: some View {
         HStack(spacing: 4) {
             //ButtonView(config: presentation.alert.stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
-            ButtonView(config: .stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString), tint: .red)
+            ButtonView(config: .stopButton, intent: StopIntent(alarmID: state.alarmID.uuidString, alarmModelID: attributes.metadata?.alarmModelID ?? ""), tint: .red)
         }
     }
 }

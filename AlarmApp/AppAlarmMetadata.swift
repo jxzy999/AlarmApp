@@ -16,8 +16,10 @@ import AlarmKit
 struct AppAlarmMetadata: AlarmMetadata, Codable {
     var label: String
     var icon: String
-    init(label: String = "闹钟", icon: String = "alarm") {
+    var alarmModelID: String
+    init(label: String = "闹钟", icon: String = "alarm", alarmModelID: String = "") {
         self.label = label
         self.icon = icon
+        self.alarmModelID = alarmModelID
     }
 }

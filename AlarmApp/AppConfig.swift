@@ -23,14 +23,33 @@ struct StopIntent: LiveActivityIntent {
     @Parameter(title: "Alarm ID")
     var alarmID: String
     
-    init() {}
-    init(alarmID: String) { self.alarmID = alarmID }
     
-    func perform() throws -> some IntentResult {
+    @Parameter(title: "AlarmModel ID")
+    var alarmModelID: String?
+    
+    init() {}
+    init(alarmID: String, alarmModelID: String) {
+        self.alarmID = alarmID
+        self.alarmModelID = alarmModelID
+    }
+    
+    func perform() async throws -> some IntentResult {
+        
+        Log.d("StopIntent: \(alarmID) - \(String(describing: alarmModelID))")
+        
+        // 1. 检查是否需要补货
+        if let alarmModelID = alarmModelID,
+           let parentUUID = UUID(uuidString: alarmModelID) {
+            // 异步触发检查，不阻塞 Intent 返回
+            await AlarmService.shared.checkAndReplenish(alarmID: parentUUID)
+        }
+        
+        // 2. 停止当前响铃的闹钟
         if let uuid = UUID(uuidString: alarmID) {
             // 调用 Manager 停止
             try AlarmManager.shared.stop(id: uuid)
         }
+        
         return .result()
     }
 }

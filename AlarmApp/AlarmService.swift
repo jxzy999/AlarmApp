@@ -19,31 +19,46 @@ class AlarmService {
     private let alarmManager = AlarmManager.shared
     
     // MARK: - 主同步方法
+    
+    // 供 View 调用
     @MainActor
     func syncAlarmToSystem(_ alarm: AlarmModel) {
         Task {
-            // 清理所有旧的
-            await cleanUpSystemAlarms(for: alarm)
-            
-            guard alarm.isEnabled else { return }
-            
-            // 权限检查
-            guard let authStatus = try? await alarmManager.requestAuthorization(),
-                  authStatus == .authorized else { return }
-            
-            switch alarm.repeatMode {
-            case .once:
-                await scheduleOnce(alarm)
-            case .weekly:
-                await scheduleWeekly(alarm)
-            case .monthly:
-                await scheduleMonthly(alarm)
-            case .yearly:
-                await scheduleYearly(alarm)
-            case .holiday:
-                await scheduleSmartHoliday(alarm)
-            }
+            await reScheduleAlarm(alarm)
         }
+    }
+    
+    @MainActor
+    func reScheduleAlarm(_ alarm: AlarmModel) async {
+        Log.d("🔄 开始执行重新调度逻辑: \(alarm.label)")
+        
+        // 1. 清理旧的
+        await cleanUpSystemAlarms(for: alarm)
+        
+        guard alarm.isEnabled else {
+            Log.d("⏹️ 闹钟未启用，跳过调度")
+            return
+        }
+        
+        // 2. 权限检查
+        guard let authStatus = try? await alarmManager.requestAuthorization(),
+              authStatus == .authorized else { return }
+        
+        // 3. 执行调度
+        switch alarm.repeatMode {
+        case .once:
+            await scheduleOnce(alarm)
+        case .weekly:
+            await scheduleWeekly(alarm)
+        case .monthly:
+            await scheduleMonthly(alarm)
+        case .yearly:
+            await scheduleYearly(alarm)
+        case .holiday:
+            await scheduleSmartHoliday(alarm)
+        }
+        
+        Log.d("✅ 重新调度逻辑执行完毕: \(alarm.label)")
     }
     
     // MARK: - 调度逻辑实现
@@ -190,7 +205,7 @@ class AlarmService {
         
         let attributes = AlarmAttributes(
             presentation: presentation,
-            metadata: AppAlarmMetadata(label: alarm.label, icon: iconForMode(alarm.repeatMode)),
+            metadata: AppAlarmMetadata(label: alarm.label, icon: iconForMode(alarm.repeatMode), alarmModelID: alarm.id.uuidString),
             tintColor: .blue
         )
         
@@ -207,7 +222,7 @@ class AlarmService {
             countdownDuration: countdownDuration,
             schedule: schedule,
             attributes: attributes,
-            stopIntent: StopIntent(alarmID: childID.uuidString),
+            stopIntent: StopIntent(alarmID: childID.uuidString, alarmModelID: alarm.id.uuidString),
             secondaryIntent: finalSnoozeIntent,
             sound: alertSound
         )
@@ -246,6 +261,78 @@ class AlarmService {
         
         Log.d("DEBUG: 单次闹钟设定 - 当前时间: \(now), 目标响铃: \(nextDate)")
         return nextDate
+    }
+    
+    
+    // MARK: - 检查并补货 (Check & Replenish)
+    
+    /// 检查特定闹钟的剩余预埋量，如果不足则补充
+    /// 此方法是单纯的逻辑判断，不涉及 UI，可被 Intent 或 App 调用
+    func checkAndReplenish(alarmID: UUID) async {
+        Log.d("checkAndReplenish")
+        
+        // 1. 获取本地记录的“该闹钟产生的所有系统ID”
+        let storedIDStrings = getSystemIDs(for: alarmID)
+        
+        Log.d("checkAndReplenish \(storedIDStrings)")
+        // 如果本地都没记录了，说明要么是新建的，要么被清空了，直接视为0
+        guard !storedIDStrings.isEmpty else { return }
+        
+        do {
+            // 2. 获取系统当前真正存活的所有闹钟
+            let activeSystemAlarms = try alarmManager.alarms
+            
+            // 转为 Set 提高查找性能
+            let activeSystemIDs = Set(activeSystemAlarms.map { $0.id.uuidString })
+            
+            // 3. 计算交集：本地记录的 ID 中，还有多少个在系统中活着？
+            let aliveCount = storedIDStrings.filter { activeSystemIDs.contains($0) }.count
+            
+            Log.d("🔍 闹钟 [UUID: \(alarmID)] 剩余存活数量: \(aliveCount)")
+            
+            // 4. 清理旧数据 (可选优化)：把已经死掉的 ID 从 UserDefaults 移除，防止列表无限膨胀
+            let validIDs = storedIDStrings.filter { activeSystemIDs.contains($0) }
+            if validIDs.count != storedIDStrings.count {
+                UserDefaults.standard.set(validIDs, forKey: getStoreKey(for: alarmID))
+            }
+            
+            // 5. 阈值判断：如果小于 5 个，且不是单次闹钟，则触发重新调度
+            // 注意：这里我们需要访问 AlarmModel 来判断 repeatMode。
+            // 由于 checkAndReplenish 可能在后台 Intent 调用，我们需要手动查库。
+            if aliveCount < 5 {
+                await replenishByRescheduling(alarmID: alarmID)
+            }
+            
+        } catch {
+            Log.d("❌ 获取系统闹钟列表失败: \(error)")
+        }
+    }
+    
+    // 内部私有方法：查库并重新调度
+    @MainActor
+    private func replenishByRescheduling(alarmID: UUID) async {
+        // 创建临时的 ModelContainer 来查询数据 (确保线程安全)
+        do {
+            let schema = Schema([AlarmModel.self])
+            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let container = try ModelContainer(for: schema, configurations: [config])
+            let context = container.mainContext
+            
+            let descriptor = FetchDescriptor<AlarmModel>(predicate: #Predicate { $0.id == alarmID })
+            
+            if let alarm = try context.fetch(descriptor).first {
+                // 只有非单次闹钟才需要补货
+                if alarm.repeatMode != .once && alarm.repeatMode != .weekly {
+                    Log.d("⚠️ 触发补货机制: \(alarm.label)")
+                    
+                    await self.reScheduleAlarm(alarm)
+                                        
+                    Log.d("🏁 补货任务彻底完成")
+                }
+            }
+        } catch {
+            Log.d("❌ 补货查询数据库失败: \(error)")
+        }
     }
     
     
