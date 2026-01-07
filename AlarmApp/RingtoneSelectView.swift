@@ -12,7 +12,6 @@ struct RingtoneSelectView: View {
     @State private var audioManager = AudioPlayerManager() // 页面独享播放器状态
     
     // 这里列出你必须要添加到 Xcode 项目中的文件名（不带后缀）
-    // 你需要自己找音频文件改名为这些名字并拖入项目
     let systemSounds = [
         "Alarm",
         "Apex",
@@ -43,7 +42,7 @@ struct RingtoneSelectView: View {
                     Button {
                         // 选中该铃声
                         selectedSound = sound
-                        // 选中时同时也试听一下（符合iOS习惯，可选）
+                        // 选中时同时也试听一下
                         audioManager.play(soundName: sound)
                     } label: {
                         HStack {

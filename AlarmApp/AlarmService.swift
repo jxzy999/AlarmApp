@@ -22,7 +22,7 @@ class AlarmService {
     @MainActor
     func syncAlarmToSystem(_ alarm: AlarmModel) {
         Task {
-            // 清理所有旧的 (包括小睡产生的临时闹钟)
+            // 清理所有旧的
             await cleanUpSystemAlarms(for: alarm)
             
             guard alarm.isEnabled else { return }
@@ -37,9 +37,9 @@ class AlarmService {
             case .weekly:
                 await scheduleWeekly(alarm)
             case .monthly:
-                await scheduleMonthly(alarm) // 新增
+                await scheduleMonthly(alarm)
             case .yearly:
-                await scheduleYearly(alarm)  // 新增
+                await scheduleYearly(alarm)
             case .holiday:
                 await scheduleSmartHoliday(alarm)
             }

@@ -10,7 +10,7 @@ import AVFoundation
 
 @Observable
 class AudioPlayerManager {
-    // 单例，方便全局调用（或者在 View 中创建 @State）
+    // 单例
     static let shared = AudioPlayerManager()
     
     var playingSoundName: String? = nil // 当前正在播放的铃声名
