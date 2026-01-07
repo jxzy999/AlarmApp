@@ -51,7 +51,9 @@ struct AlarmListView: View {
                             .font(.system(size: 28))
                             .foregroundStyle(.blue)
                     }
+                    .buttonStyle(.borderless)
                 }
+                .sharedBackgroundVisibility(.hidden)
             }
             .sheet(isPresented: $showAddSheet) {
                 EditAlarmView()
