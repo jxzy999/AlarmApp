@@ -85,12 +85,31 @@ class HolidayService {
             }
         }
         
+        // 在进入 MainActor 之前，创建不可变的副本 (Freeze the state)
+        // 防止并发环境下 var 变量被修改的风险
+        let finalHolidays = tempHolidays
+        let finalMakeups = tempMakeups
+        
         // 更新内存和本地存储
         await MainActor.run {
-            self.holidays = tempHolidays
-            self.makeUpWorkdays = tempMakeups
-            UserDefaults.standard.set(Array(tempHolidays), forKey: kHolidaysKey)
-            UserDefaults.standard.set(Array(tempMakeups), forKey: kMakeupsKey)
+            self.holidays = finalHolidays
+            self.makeUpWorkdays = finalMakeups
+            UserDefaults.standard.set(Array(finalHolidays), forKey: kHolidaysKey)
+            UserDefaults.standard.set(Array(finalMakeups), forKey: kMakeupsKey)
         }
+    }
+    
+    
+    /// 检查指定年份是否有数据缓存
+    /// 注意：访问 holidays 属性会建立 SwiftUI 的依赖追踪，当数据更新时 View 会刷新
+    func hasData(for year: Int) -> Bool {
+        let yearPrefix = "\(year)-"
+        // 只要假期列表或补班列表中包含该年份前缀的数据，就视为有数据
+        // 使用 lazy 避免遍历整个集合，找到一个即停止
+        let hasHoliday = holidays.contains { $0.hasPrefix(yearPrefix) }
+        if hasHoliday { return true }
+        
+        let hasMakeup = makeUpWorkdays.contains { $0.hasPrefix(yearPrefix) }
+        return hasMakeup
     }
 }

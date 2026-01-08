@@ -31,6 +31,9 @@ struct EditAlarmView: View {
     @State private var isSnoozeEnabled: Bool = true
     @State private var snoozeDuration: Int = 5
     
+    // 控制菊花显示
+    @State private var isFetchingHolidays: Bool = false
+    
     // 常量
     let weekDaysOrdered = [2, 3, 4, 5, 6, 7, 1]
     let weekDaySymbols = ["一", "二", "三", "四", "五", "六", "日"]
@@ -176,38 +179,76 @@ struct EditAlarmView: View {
                 .datePickerStyle(.graphical)
             
         case .holiday:
+            holidayStatusView
+        }
+    }
+    
+    // 将节假日视图逻辑单独提取，保持代码整洁
+    private var holidayStatusView: some View {
+        let currentYear = Calendar.current.component(.year, from: Date())
+        // 调用 Service 检查数据状态。
+        // 因为 Service 是 @Observable，访问其属性（在 hasData 内部）会建立依赖，数据更新时 View 会自动重绘。
+        let hasData = HolidayService.shared.hasData(for: currentYear)
+        
+        return HStack {
             Text("智能跳过法定节假日，包含调休补班")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                // 有数据显示灰色，无数据显示红色
+                .foregroundStyle(hasData ? Color.secondary : Color.red)
+                .onTapGesture {
+                    // 仅当没有数据且不在加载中时，允许点击触发加载
+                    if !hasData && !isFetchingHolidays {
+                        refreshHolidayData()
+                    }
+                }
+            
+            // 加载菊花
+            if isFetchingHolidays {
+                ProgressView()
+                    .controlSize(.small)
+                    .padding(.leading, 5)
+            } else if !hasData {
+                // 可选：无数据时显示一个小图标提示可点击
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
+        .padding(.vertical, 4)
     }
     
     // MARK: - Logic
     
+    func refreshHolidayData() {
+        // 开启加载状态
+        isFetchingHolidays = true
+        
+        Task {
+            // 调用 Service 获取数据
+            await HolidayService.shared.fetchHolidayData()
+            
+            await MainActor.run {
+                isFetchingHolidays = false
+            }
+        }
+    }
+    
     func loadData() {
         if hasLoadedData { return }
-        
-        // 标记为已加载
         hasLoadedData = true
         
         if let alarm = existingAlarm {
-            // 确保所有字段都从 existingAlarm 同步到 State
             time = alarm.time
             label = alarm.label
             repeatMode = alarm.repeatMode
-            
-            // 集合类型转换
             selectedWeekdays = Set(alarm.repeatDays)
             selectedMonthDays = Set(alarm.repeatMonthDays)
-            
             selectedYearDate = alarm.repeatYearDate
             isSnoozeEnabled = alarm.isSnoozeEnabled
             snoozeDuration = alarm.snoozeDuration
             soundName = alarm.soundName
         } else {
-            // 如果是新增，初始化一些默认值
             time = Date()
-            // 将秒数归零，防止初始时间带有秒数
             let calendar = Calendar.current
             let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: time)
             time = calendar.date(from: components) ?? Date()
@@ -217,8 +258,6 @@ struct EditAlarmView: View {
     
     func saveAlarm() {
         let alarmToSave = existingAlarm ?? AlarmModel(time: time)
-        
-        // 保存时截断秒数，确保时间是整分
         let calendar = Calendar.current
         let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: time)
         let cleanTime = calendar.date(from: comps) ?? time
@@ -238,9 +277,7 @@ struct EditAlarmView: View {
             modelContext.insert(alarmToSave)
         }
         
-        // 强制保存 Context，确保 Service 读取到最新数据（虽然 Service 直接用对象，但是个好习惯）
         try? modelContext.save()
-        
         AlarmService.shared.syncAlarmToSystem(alarmToSave)
         dismiss()
     }
