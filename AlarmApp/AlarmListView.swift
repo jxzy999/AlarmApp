@@ -102,6 +102,11 @@ struct AlarmListCell: View {
                         .font(.caption)
                 }
                 .foregroundStyle(alarm.isEnabled ? .secondary : .tertiary)
+                
+                // 下一次响铃时间（小字）
+                Text(alarm.nextFireDisplayText())
+                    .font(.caption2)
+                    .foregroundStyle(alarm.isEnabled ? .secondary : .tertiary)
             }
             
             Spacer()
